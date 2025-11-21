@@ -1,0 +1,8 @@
+{
+  "name": "Monochrome Employee PWA",
+  "description": "An enterprise-grade, native-feel employee management progressive web app with full offline-first capability, background sync for actions like attendance punching, leave management, and more.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}

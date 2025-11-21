@@ -1,0 +1,281 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Employee Management API
+  version: 0.1.0
+  description: >
+    REST contract backing the PWA. All endpoints accept/return JSON and must be
+    secured with JWT Bearer tokens in production.
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:4000
+    description: Stub server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Punch:
+      type: object
+      properties:
+        attendanceId:
+          type: string
+        userId:
+          type: string
+        type:
+          type: string
+          enum: [in, out]
+        timestamp:
+          type: string
+          format: date-time
+        location:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+            accuracy:
+              type: number
+        photoUrl:
+          type: string
+        status:
+          type: string
+    LeaveRequest:
+      type: object
+      properties:
+        leaveId:
+          type: string
+        userId:
+          type: string
+        type:
+          type: string
+          enum: [casual, sick, earned, optional]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+        status:
+          type: string
+    Ticket:
+      type: object
+      properties:
+        ticketId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      summary: Issue JWT for email/SMS identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                otp:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refreshToken:
+                    type: string
+                  user:
+                    type: object
+  /api/auth/refresh:
+    post:
+      summary: Refresh auth token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New JWT
+  /api/auth/me:
+    get:
+      summary: Fetch current user profile
+      responses:
+        '200':
+          description: User profile
+  /api/attendance/punch:
+    post:
+      summary: Submit IN/OUT punch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Punch'
+      responses:
+        '201':
+          description: Punch stored
+  /api/attendance/daily:
+    get:
+      summary: List attendance for the day
+      responses:
+        '200':
+          description: Array of punches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Punch'
+  /api/attendance/inout:
+    get:
+      summary: Provide IN/OUT timeline report
+      responses:
+        '200':
+          description: Timeline entries
+  /api/leave/apply:
+    post:
+      summary: Submit leave request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveRequest'
+      responses:
+        '201':
+          description: Leave created
+  /api/leave/balance:
+    get:
+      summary: Fetch leave balance
+      responses:
+        '200':
+          description: Leave balance list
+  /api/leave/list:
+    get:
+      summary: List historical leave applications
+      responses:
+        '200':
+          description: Leave requests
+  /api/leave/{id}/approve:
+    post:
+      summary: Approve or reject leave
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [approved, rejected]
+      responses:
+        '200':
+          description: Updated request
+  /api/payslip/{year}/{month}:
+    get:
+      summary: Fetch monthly payslip
+      parameters:
+        - in: path
+          name: year
+          schema:
+            type: integer
+        - in: path
+          name: month
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payslip payload
+  /api/ticket/create:
+    post:
+      summary: Create helpdesk ticket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        '201':
+          description: Ticket created
+  /api/ticket/list:
+    get:
+      summary: List tickets
+      responses:
+        '200':
+          description: Tickets array
+  /api/ticket/{id}/reply:
+    post:
+      summary: Reply to ticket
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Updated ticket
+  /api/approvals:
+    get:
+      summary: Fetch approval queue
+      responses:
+        '200':
+          description: Approvals list
+  /api/approval/{id}/action:
+    post:
+      summary: Act on approval
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [approved, rejected]
+      responses:
+        '200':
+          description: Updated approval
+
